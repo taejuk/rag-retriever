@@ -41,6 +41,9 @@ def evaluate(
     chunks: List[Dict[str, Any]],
     top_k: int,
     retriever: str,
+    candidate_k: int = 10,
+    bm25_weight: float = 1.0,
+    dense_weight: float = 1.0
 ) -> Dict[str, float]:
     hit_at_1 = 0
     hit_at_k = 0
@@ -48,6 +51,7 @@ def evaluate(
 
     bm25_index = None
     dense_index = None
+    hybrid_retriever = None
 
     if retriever == "bm25":
         bm25_index = BM25Index(chunks)
@@ -58,7 +62,7 @@ def evaluate(
             meta_path=Path(DEFAULT_META_PATH),
         )
     elif retriever == "hybrid":
-        hybrid_retriever = HybridRetriever(chunks)
+        hybrid_retriever = HybridRetriever(chunks, bm25_weight=bm25_weight, dense_weight=dense_weight)
 
     for q in questions:
         query = q["question"]
@@ -73,7 +77,7 @@ def evaluate(
             results = hybrid_retriever.search(
                 query,
                 top_k=top_k,
-                candidate_k=max(10, top_k)
+                candidate_k=max(candidate_k, top_k)
             )
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
@@ -110,6 +114,9 @@ def print_failure_cases(
     chunks: List[Dict[str, Any]],
     top_k: int,
     retriever: str,
+    candidate_k: int = 10,
+    bm25_weight: float = 1.0,
+    dense_weight: float = 1.0,
 ) -> None:
     print()
     print("Failure Cases")
@@ -118,6 +125,9 @@ def print_failure_cases(
     has_failure = False
 
     bm25_index = None
+    dense_index = None
+    hybrid_retriever = None
+
     if retriever == "bm25":
         bm25_index = BM25Index(chunks)
     elif retriever == "dense":
@@ -127,7 +137,11 @@ def print_failure_cases(
             meta_path=Path(DEFAULT_META_PATH),
         )
     elif retriever == "hybrid":
-        hybrid_retriever = HybridRetriever(chunks)
+        hybrid_retriever = HybridRetriever(
+            chunks,
+            bm25_weight=bm25_weight,
+            dense_weight=dense_weight,
+        )
 
     for q in questions:
         query = q["question"]
@@ -142,7 +156,7 @@ def print_failure_cases(
             results = hybrid_retriever.search(
                 query,
                 top_k=top_k,
-                candidate_k=max(10, top_k),
+                candidate_k=max(candidate_k, top_k),
             )
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
@@ -157,7 +171,21 @@ def print_failure_cases(
 
         for rank, item in enumerate(results, start=1):
             chunk = item["chunk"]
-            print(f"  [{rank}] score={item['score']:.4f} section={chunk['section']}")
+
+            ranks = item.get("ranks")
+            if ranks is not None:
+                bm25_rank = ranks.get("bm25_rank", "-")
+                dense_rank = ranks.get("dense_rank", "-")
+                print(
+                    f"  [{rank}] score={item['score']:.4f} "
+                    f"section={chunk['section']} "
+                    f"bm25_rank={bm25_rank} dense_rank={dense_rank}"
+                )
+            else:
+                print(
+                    f"  [{rank}] score={item['score']:.4f} "
+                    f"section={chunk['section']}"
+                )
 
         print("-" * 80)
 
@@ -175,12 +203,15 @@ def main():
         default="keyword",
         choices=["keyword", "bm25", "dense", "hybrid"],
     )
+    parser.add_argument("--candidate-k", type=int, default=10)
+    parser.add_argument("--bm25-weight", type=float, default=1.0)
+    parser.add_argument("--dense-weight", type=float, default=1.0)
     args = parser.parse_args()
 
     questions = load_questions(Path(args.questions))
     chunks = load_chunks(Path(args.chunks))
 
-    metrics = evaluate(questions, chunks, top_k=args.top_k, retriever=args.retriever)
+    metrics = evaluate(questions, chunks, top_k=args.top_k, retriever=args.retriever, candidate_k=args.candidate_k, bm25_weight=args.bm25_weight, dense_weight=args.dense_weight)
 
     print("Retrieval Evaluation")
     print("=" * 80)
@@ -190,8 +221,15 @@ def main():
         else:
             print(f"{key}: {value}")
 
-    print_failure_cases(questions, chunks, top_k=args.top_k, retriever=args.retriever)
-
+    print_failure_cases(
+        questions,
+        chunks,
+        top_k=args.top_k,
+        retriever=args.retriever,
+        candidate_k=args.candidate_k,
+        bm25_weight=args.bm25_weight,
+        dense_weight=args.dense_weight,
+    )
 
 if __name__ == "__main__":
     main()
