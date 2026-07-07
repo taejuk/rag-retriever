@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from rag.search import load_chunks, search_chunks
+from rag.bm25 import BM25Index
 
 
 def load_questions(path: Path) -> List[Dict[str, Any]]:
@@ -38,14 +39,25 @@ def evaluate(
     questions: List[Dict[str, Any]],
     chunks: List[Dict[str, Any]],
     top_k: int,
+    retriever: str,
 ) -> Dict[str, float]:
     hit_at_1 = 0
     hit_at_k = 0
     mrr_sum = 0.0
 
+    bm25_index = None
+    if retriever == "bm25":
+        bm25_index = BM25Index(chunks)
+
     for q in questions:
         query = q["question"]
-        results = search_chunks(query, chunks, top_k=top_k)
+
+        if retriever == "keyword":
+            results = search_chunks(query, chunks, top_k=top_k)
+        elif retriever == "bm25":
+            results = bm25_index.search(query, top_k=top_k)
+        else:
+            raise ValueError(f"Unknown retriever: {retriever}")
 
         first_relevant_rank = None
 
@@ -67,6 +79,7 @@ def evaluate(
 
     return {
         "num_questions": n,
+        "retriever": retriever,
         "hit@1": hit_at_1 / n if n > 0 else 0.0,
         f"hit@{top_k}": hit_at_k / n if n > 0 else 0.0,
         f"mrr@{top_k}": mrr_sum / n if n > 0 else 0.0,
@@ -77,6 +90,7 @@ def print_failure_cases(
     questions: List[Dict[str, Any]],
     chunks: List[Dict[str, Any]],
     top_k: int,
+    retriever: str,
 ) -> None:
     print()
     print("Failure Cases")
@@ -84,9 +98,19 @@ def print_failure_cases(
 
     has_failure = False
 
+    bm25_index = None
+    if retriever == "bm25":
+        bm25_index = BM25Index(chunks)
+
     for q in questions:
         query = q["question"]
-        results = search_chunks(query, chunks, top_k=top_k)
+
+        if retriever == "keyword":
+            results = search_chunks(query, chunks, top_k=top_k)
+        elif retriever == "bm25":
+            results = bm25_index.search(query, top_k=top_k)
+        else:
+            raise ValueError(f"Unknown retriever: {retriever}")
 
         if any(is_relevant(item["chunk"], q) for item in results):
             continue
@@ -98,25 +122,30 @@ def print_failure_cases(
 
         for rank, item in enumerate(results, start=1):
             chunk = item["chunk"]
-            print(f"  [{rank}] score={item['score']:.2f} section={chunk['section']}")
+            print(f"  [{rank}] score={item['score']:.4f} section={chunk['section']}")
 
         print("-" * 80)
 
     if not has_failure:
         print("No failure cases.")
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--questions", type=str, default="eval/questions.jsonl")
     parser.add_argument("--chunks", type=str, default="data/chunks.jsonl")
     parser.add_argument("--top-k", type=int, default=3)
+    parser.add_argument(
+        "--retriever",
+        type=str,
+        default="keyword",
+        choices=["keyword", "bm25"],
+    )
     args = parser.parse_args()
 
     questions = load_questions(Path(args.questions))
     chunks = load_chunks(Path(args.chunks))
 
-    metrics = evaluate(questions, chunks, top_k=args.top_k)
+    metrics = evaluate(questions, chunks, top_k=args.top_k, retriever=args.retriever)
 
     print("Retrieval Evaluation")
     print("=" * 80)
@@ -126,7 +155,7 @@ def main():
         else:
             print(f"{key}: {value}")
 
-    print_failure_cases(questions, chunks, top_k=args.top_k)
+    print_failure_cases(questions, chunks, top_k=args.top_k, retriever=args.retriever)
 
 
 if __name__ == "__main__":
