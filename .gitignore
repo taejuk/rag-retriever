@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+
+data/embeddings.npy
+data/dense_meta.json
+
+.DS_Store

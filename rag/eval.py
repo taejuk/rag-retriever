@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from rag.search import load_chunks, search_chunks
 from rag.bm25 import BM25Index
-
+from rag.dense import DenseIndex, DEFAULT_EMBEDDINGS_PATH, DEFAULT_META_PATH
 
 def load_questions(path: Path) -> List[Dict[str, Any]]:
     questions = []
@@ -46,8 +46,16 @@ def evaluate(
     mrr_sum = 0.0
 
     bm25_index = None
+    dense_index = None
+
     if retriever == "bm25":
         bm25_index = BM25Index(chunks)
+    elif retriever == "dense":
+        dense_index = DenseIndex.load(
+            chunks=chunks,
+            embeddings_path=Path(DEFAULT_EMBEDDINGS_PATH),
+            meta_path=Path(DEFAULT_META_PATH),
+        )
 
     for q in questions:
         query = q["question"]
@@ -56,6 +64,8 @@ def evaluate(
             results = search_chunks(query, chunks, top_k=top_k)
         elif retriever == "bm25":
             results = bm25_index.search(query, top_k=top_k)
+        elif retriever == "dense":
+            results = dense_index.search(query, top_k=top_k)
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
 
@@ -101,7 +111,12 @@ def print_failure_cases(
     bm25_index = None
     if retriever == "bm25":
         bm25_index = BM25Index(chunks)
-
+    elif retriever == "dense":
+        dense_index = DenseIndex.load(
+            chunks=chunks,
+            embeddings_path=Path(DEFAULT_EMBEDDINGS_PATH),
+            meta_path=Path(DEFAULT_META_PATH),
+        )
     for q in questions:
         query = q["question"]
 
@@ -109,6 +124,8 @@ def print_failure_cases(
             results = search_chunks(query, chunks, top_k=top_k)
         elif retriever == "bm25":
             results = bm25_index.search(query, top_k=top_k)
+        elif retriever == "dense":
+            results = dense_index.search(query, top_k=top_k)
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
 
@@ -138,7 +155,7 @@ def main():
         "--retriever",
         type=str,
         default="keyword",
-        choices=["keyword", "bm25"],
+        choices=["keyword", "bm25", "dense"],
     )
     args = parser.parse_args()
 

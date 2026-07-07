@@ -12,7 +12,7 @@ DEFAULT_DATASETS = {
     "paraphrase": "eval/questions_paraphrase.jsonl",
 }
 
-DEFAULT_RETRIEVERS = ["keyword", "bm25"]
+DEFAULT_RETRIEVERS = ["keyword", "bm25", "dense"]
 
 
 def format_float(value: float) -> str:
