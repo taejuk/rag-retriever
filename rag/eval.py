@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from rag.search import load_chunks, search_chunks
 from rag.bm25 import BM25Index
 from rag.dense import DenseIndex, DEFAULT_EMBEDDINGS_PATH, DEFAULT_META_PATH
+from rag.hybrid import HybridRetriever
 
 def load_questions(path: Path) -> List[Dict[str, Any]]:
     questions = []
@@ -56,6 +57,8 @@ def evaluate(
             embeddings_path=Path(DEFAULT_EMBEDDINGS_PATH),
             meta_path=Path(DEFAULT_META_PATH),
         )
+    elif retriever == "hybrid":
+        hybrid_retriever = HybridRetriever(chunks)
 
     for q in questions:
         query = q["question"]
@@ -65,7 +68,13 @@ def evaluate(
         elif retriever == "bm25":
             results = bm25_index.search(query, top_k=top_k)
         elif retriever == "dense":
-            results = dense_index.search(query, top_k=top_k)
+            results = dense_index.search(query, top_k=top_k)    
+        elif retriever == "hybrid":
+            results = hybrid_retriever.search(
+                query,
+                top_k=top_k,
+                candidate_k=max(10, top_k)
+            )
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
 
@@ -117,6 +126,9 @@ def print_failure_cases(
             embeddings_path=Path(DEFAULT_EMBEDDINGS_PATH),
             meta_path=Path(DEFAULT_META_PATH),
         )
+    elif retriever == "hybrid":
+        hybrid_retriever = HybridRetriever(chunks)
+
     for q in questions:
         query = q["question"]
 
@@ -126,6 +138,12 @@ def print_failure_cases(
             results = bm25_index.search(query, top_k=top_k)
         elif retriever == "dense":
             results = dense_index.search(query, top_k=top_k)
+        elif retriever == "hybrid":
+            results = hybrid_retriever.search(
+                query,
+                top_k=top_k,
+                candidate_k=max(10, top_k),
+            )
         else:
             raise ValueError(f"Unknown retriever: {retriever}")
 
@@ -155,7 +173,7 @@ def main():
         "--retriever",
         type=str,
         default="keyword",
-        choices=["keyword", "bm25", "dense"],
+        choices=["keyword", "bm25", "dense", "hybrid"],
     )
     args = parser.parse_args()
 
