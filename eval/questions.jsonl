@@ -1,0 +1,9 @@
+{"question": "PagedAttention에서 block table은 왜 필요한가?", "relevant_section": "PagedAttention > Block Table"}
+{"question": "BlockAllocator는 어떤 역할을 하는가?", "relevant_section": "PagedAttention > BlockAllocator"}
+{"question": "KV cache fragmentation 문제는 무엇인가?", "relevant_section": "PagedAttention > KV Cache Problem"}
+{"question": "continuous batching은 왜 필요한가?", "relevant_section": "Scheduler > Continuous Batching"}
+{"question": "prefill과 decode는 어떻게 다른가?", "relevant_section": "Scheduler > Prefill and Decode"}
+{"question": "scheduler는 PagedAttention과 어떻게 연결되는가?", "relevant_section": "Scheduler > PagedAttention Integration"}
+{"question": "coalesced memory access는 무엇인가?", "relevant_section": "CUDA Kernel > Coalescing"}
+{"question": "Tensor Core는 어디에 사용되는가?", "relevant_section": "CUDA Kernel > Tensor Core"}
+{"question": "GEMM은 LLM에서 왜 중요한가?", "relevant_section": "CUDA Kernel > Matrix Multiplication"}
