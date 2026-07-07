@@ -1,0 +1,5 @@
+{"question": "KV cache를 연속된 메모리에 저장하지 않아도 되는 이유는?", "relevant_section": "PagedAttention > Block Table"}
+{"question": "사용이 끝난 cache block은 어떻게 재활용되는가?", "relevant_section": "PagedAttention > BlockAllocator"}
+{"question": "여러 요청의 다음 token 생성을 묶어서 처리하는 이유는?", "relevant_section": "Scheduler > Continuous Batching"}
+{"question": "warp thread들이 인접한 주소를 읽으면 왜 빠른가?", "relevant_section": "CUDA Kernel > Coalescing"}
+{"question": "mixed precision 행렬곱을 빠르게 처리하는 장치는?", "relevant_section": "CUDA Kernel > Tensor Core"}

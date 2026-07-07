@@ -1,12 +1,37 @@
 # rag-retriever
 
-Implemented a minimal retrieval pipeline for technical RAG:
+A minimal retrieval engine for technical RAG systems.
+
+This project focuses on the retrieval part of RAG, especially for technical documents such as LLM serving notes, CUDA kernel notes, and scheduler documentation.
+
+## Goal
+
+The goal is to compare different retrieval strategies for technical RAG:
+
+- Keyword overlap retrieval
+- BM25 sparse retrieval
+- Dense retrieval
+- Hybrid retrieval
+
+Current version implements:
 
 - Markdown ingestion
 - Heading-based chunking
 - Source metadata preservation
 - Keyword-based retrieval
+- BM25 retrieval with inverted index
 - Hit@k and MRR evaluation
+- Failure case analysis
 
-Initial evaluation on 9 simple queries achieved Hit@1 = 1.0 and MRR@3 = 1.0.
-This indicates that the v0 pipeline works, but the benchmark is too easy due to lexical overlap between queries and section titles.
+## Pipeline
+
+```text
+docs/*.md
+  -> heading-based chunking
+  -> chunks.jsonl
+  -> retriever
+      -> keyword overlap
+      -> BM25
+  -> top-k chunks
+  -> Hit@k / MRR evaluation
+```

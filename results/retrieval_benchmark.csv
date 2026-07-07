@@ -1,0 +1,5 @@
+dataset,retriever,num_questions,hit@1,hit@3,mrr@3
+simple,keyword,9,0.8888888888888888,1.0,0.9444444444444444
+simple,bm25,9,1.0,1.0,1.0
+paraphrase,keyword,5,0.6,1.0,0.8
+paraphrase,bm25,5,0.8,0.8,0.8
